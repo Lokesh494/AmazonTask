@@ -1,0 +1,64 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                script {
+                    def branch = env.BRANCH_NAME
+                    if (branch == 'main') {
+                        echo 'Building main branch...'
+                        // Build steps for the main branch
+                        sh 'mvn clean install -Pmain-profile'
+                    } else if (branch == 'master') {
+                        echo 'Building master branch...'
+                        // Build steps for the master branch
+                        sh 'mvn clean install -Pmaster-profile'
+                    } else {
+                        echo "Building other branch: ${branch}"
+                        // Build steps for other branches
+                        sh 'mvn clean install'
+                    }
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                script {
+                    def branch = env.BRANCH_NAME
+                    if (branch == 'main' || branch == 'master') {
+                        echo 'Running tests...'
+                        // Test steps
+                        sh 'mvn test'
+                    } else {
+                        echo 'Skipping tests for non-main/non-master branches.'
+                    }
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    def branch = env.BRANCH_NAME
+                    if (branch == 'main') {
+                        echo 'Deploying main branch...'
+                        // Deployment steps for the main branch
+                        sh 'mvn deploy -Pmain-profile'
+                    } else {
+                        echo 'Skipping deployment for non-main branches.'
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Cleaning up...'
+            // Cleanup steps
+            sh 'mvn clean'
+        }
+    }
+}
